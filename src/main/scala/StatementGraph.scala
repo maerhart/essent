@@ -190,7 +190,7 @@ object StatementGraph {
   def apply(bodies: Seq[Statement]): StatementGraph = {
     val sg = new StatementGraph
     sg.buildFromBodies(bodies)
-    // sg.addOrderingDepsForStateUpdates()
+    sg.addOrderingDepsForStateUpdates()
     sg
   }
 

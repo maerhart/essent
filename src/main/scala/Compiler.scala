@@ -644,7 +644,7 @@ class EssentEmitter(initialOpt: OptFlags, writer: Writer) extends LazyLogging {
       case cp: CondPart => {
         writeLines(1, s"void ${genEvalFuncName(cp.id)}() {")
         if (!cp.alwaysActive)
-          writeLines(2, s"$flagVarName[${cp.id}] = false;")
+          writeLines(2, s"if (update_registers) $flagVarName[${cp.id}] = false;")
         if (opt.trackParts)
           writeLines(2, s"$actVarName[${cp.id}]++;")
 
@@ -658,6 +658,7 @@ class EssentEmitter(initialOpt: OptFlags, writer: Writer) extends LazyLogging {
         writeLines(2, genAllTriggers(cp.outputsToDeclare.keys.toSeq, outputConsumers, condPartWorker.cacheSuffix))
         val regUpdateNamesInPart = regUpdates flatMap findResultName
         writeLines(2, genAllTriggers(regUpdateNamesInPart, outputConsumers, "$next"))
+        writeLines(2, regUpdates flatMap emitStmt)
         // triggers for MemWrites
         val memWritesInPart = cp.memberStmts collect { case mw: MemWrite => mw }
         val memWriteTriggers = memWritesInPart flatMap { mw => {
@@ -665,7 +666,6 @@ class EssentEmitter(initialOpt: OptFlags, writer: Writer) extends LazyLogging {
           genDepPartTriggers(outputConsumers.getOrElse(mw.memName, Seq()), condition)
         }}
         writeLines(2, memWriteTriggers)
-        writeLines(2, regUpdates flatMap emitStmt)
         writeLines(1, "}")
       }
       case _ => throw new Exception(s"Statement at top-level is not a CondPart (${stmt.serialize})")
@@ -872,8 +872,15 @@ class EssentEmitter(initialOpt: OptFlags, writer: Writer) extends LazyLogging {
     //   sg.dumpNodeTypeToJson(sigNameToID)
     // sg.reachableAfter(sigNameToID)
 
-
+    val condPartWorker = MakeCondPart(sg, rn, extIOMap)
     rn.populateFromSG(sg, extIOMap, isParallel = false)
+
+    if (opt.useCondParts) {
+      condPartWorker.doOpt(opt.partCutoff)
+    } else {
+      if (opt.regUpdates)
+        OptElideRegUpdates(sg)
+    }
 
     circuit.modules foreach {
       case m: Module => declareModule(m, topName)
@@ -893,14 +900,6 @@ class EssentEmitter(initialOpt: OptFlags, writer: Writer) extends LazyLogging {
       writeLines(0, "")
     }
 
-    val condPartWorker = MakeCondPart(sg, rn, extIOMap)
-
-    if (opt.useCondParts) {
-      condPartWorker.doOpt(opt.partCutoff)
-    } else {
-      if (opt.regUpdates)
-        OptElideRegUpdates(sg)
-    }
     // if (opt.trackSigs)
     //   declareSigTracking(sg, topName, opt)
     // if (opt.trackParts)
@@ -924,7 +923,7 @@ class EssentEmitter(initialOpt: OptFlags, writer: Writer) extends LazyLogging {
       writeBodyInner(2, sg, opt)
     if (containsAsserts) {
       writeLines(2, "if (done_reset && update_registers && assert_triggered) exit(assert_exit_code);")
-      writeLines(2, "if (!done_reset) assert_triggered = false;")
+      writeLines(2, "if (!done_reset || !update_registers) assert_triggered = false;")
     }
 
     writeRegResetOverrides(sg)
@@ -1185,7 +1184,7 @@ class EssentEmitter(initialOpt: OptFlags, writer: Writer) extends LazyLogging {
         writeBodyInner_TP(2, sg, opt, pid)
       if (containsAsserts) {
         writeLines(2, s"if (done_reset && update_registers && assert_triggered) exit(assert_exit_code);")
-        writeLines(2, s"if (!done_reset) assert_triggered = false;")
+        writeLines(2, s"if (!done_reset || !update_registers) assert_triggered = false;")
       }
 
       writeRegResetOverrides(sg)

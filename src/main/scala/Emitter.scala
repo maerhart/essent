@@ -107,7 +107,7 @@ object Emitter {
     case _ => if (!topLevel) Seq()
               else Seq(genCppType(p.tpe) + " " + p.name + ";")
   }
-
+  //
   def chunkLitString(litStr: String, chunkWidth:Int = 16): Seq[String] = {
     if (litStr.length % chunkWidth == 0) litStr.grouped(chunkWidth).toSeq
     else Seq(litStr.take(litStr.length % chunkWidth)) ++ chunkLitString(litStr.drop(litStr.length % chunkWidth), chunkWidth)
@@ -246,7 +246,7 @@ object Emitter {
     case w: DefWire => Seq()
     case m: DefMemory => Seq()
     case i: WDefInstance => Seq()
-    case cg: CodeGen => Seq(cg.code)
+    // case cg: CodeGen => Seq(cg.code)
     case _ => throw new Exception(s"Don't yet support $s")
   }
 }
