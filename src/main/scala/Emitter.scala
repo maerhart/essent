@@ -215,29 +215,31 @@ object Emitter {
       if (rn.decLocal(lhs_orig)) Seq(s"${genCppType(c.loc.tpe)} $lhs = $rhs;")
       else Seq(s"$lhs = $rhs;")
     }
-    case p: Print => {
-      val formatters = "(%h)|(%x)|(%d)|(%ld)".r.findAllIn(p.string.serialize).toList
-      val argWidths = p.args map {e: Expression => bitWidth(e.tpe)}
-      if (!(argWidths forall { _ <= 64 })) throw new Exception(s"Can't print wide signals")
-      val replacements = formatters zip argWidths map { case(format, width) =>
-        if (format == "%h" || format == "%x") {
-          val printWidth = math.ceil(width.toDouble/4).toInt
-          (format, s"""%0${printWidth}" PRIx64 """")
-        } else {
-          val printWidth = math.ceil(math.log10((1l<<width.toInt).toDouble)).toInt
-          (format, s"""%${printWidth}" PRIu64 """")
-        }
-      }
-      val formatString = replacements.foldLeft(p.string.serialize){
-        case (str, (searchFor, replaceWith)) => str.replaceFirst(searchFor, replaceWith)
-      }
-      val printfArgs = Seq(s""""$formatString"""") ++
-        (p.args map {arg => s"${emitExprWrap(arg)}.as_single_word()"})
-      Seq(s"if (UNLIKELY(done_reset && update_registers && verbose && ${emitExprWrap(p.en)})) printf(${printfArgs mkString(", ")});")
-    }
-    case st: Stop => {
-      Seq(s"if (UNLIKELY(${emitExpr(st.en)})) {assert_triggered = true; assert_exit_code = ${st.ret};}")
-    }
+    case p: Print => Seq()
+    // {
+    //   val formatters = "(%h)|(%x)|(%d)|(%ld)".r.findAllIn(p.string.serialize).toList
+    //   val argWidths = p.args map {e: Expression => bitWidth(e.tpe)}
+    //   if (!(argWidths forall { _ <= 64 })) throw new Exception(s"Can't print wide signals")
+    //   val replacements = formatters zip argWidths map { case(format, width) =>
+    //     if (format == "%h" || format == "%x") {
+    //       val printWidth = math.ceil(width.toDouble/4).toInt
+    //       (format, s"""%0${printWidth}" PRIx64 """")
+    //     } else {
+    //       val printWidth = math.ceil(math.log10((1l<<width.toInt).toDouble)).toInt
+    //       (format, s"""%${printWidth}" PRIu64 """")
+    //     }
+    //   }
+    //   val formatString = replacements.foldLeft(p.string.serialize){
+    //     case (str, (searchFor, replaceWith)) => str.replaceFirst(searchFor, replaceWith)
+    //   }
+    //   val printfArgs = Seq(s""""$formatString"""") ++
+    //     (p.args map {arg => s"${emitExprWrap(arg)}.as_single_word()"})
+    //   Seq(s"if (UNLIKELY(done_reset && update_registers && verbose && ${emitExprWrap(p.en)})) printf(${printfArgs mkString(", ")});")
+    // }
+    case st: Stop => Seq()
+    // {
+    //   Seq(s"if (UNLIKELY(${emitExpr(st.en)})) {assert_triggered = true; assert_exit_code = ${st.ret};}")
+    // }
     case mw: MemWrite => {
       Seq(s"if (UNLIKELY(update_registers && ${emitExprWrap(mw.wrEn)} && ${emitExprWrap(mw.wrMask)})) ${mw.memName}[${emitExprWrap(mw.wrAddr)}.as_single_word()] = ${emitExpr(mw.wrData)};")
     }

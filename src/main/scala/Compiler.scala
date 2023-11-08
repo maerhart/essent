@@ -644,7 +644,7 @@ class EssentEmitter(initialOpt: OptFlags, writer: Writer) extends LazyLogging {
       case cp: CondPart => {
         writeLines(1, s"void ${genEvalFuncName(cp.id)}() {")
         if (!cp.alwaysActive)
-          writeLines(2, s"if (update_registers) $flagVarName[${cp.id}] = false;")
+          writeLines(2, s"$flagVarName[${cp.id}] = !update_registers;")
         if (opt.trackParts)
           writeLines(2, s"$actVarName[${cp.id}]++;")
 
@@ -856,7 +856,7 @@ class EssentEmitter(initialOpt: OptFlags, writer: Writer) extends LazyLogging {
     logger.info(sg.makeStatsString)
 
 
-    val containsAsserts = sg.containsStmtOfType[Stop]()
+    // val containsAsserts = sg.containsStmtOfType[Stop]()
     val extIOMap = findExternalPorts(circuit)
 
 
@@ -894,11 +894,11 @@ class EssentEmitter(initialOpt: OptFlags, writer: Writer) extends LazyLogging {
       writeLines(1, "}")
       writeLines(0, "")
     }
-    if (containsAsserts) {
-      writeLines(1, "bool assert_triggered = false;")
-      writeLines(1, "int assert_exit_code;")
-      writeLines(0, "")
-    }
+    // if (containsAsserts) {
+    //   writeLines(1, "bool assert_triggered = false;")
+    //   writeLines(1, "int assert_exit_code;")
+    //   writeLines(0, "")
+    // }
 
     // if (opt.trackSigs)
     //   declareSigTracking(sg, topName, opt)
@@ -921,10 +921,10 @@ class EssentEmitter(initialOpt: OptFlags, writer: Writer) extends LazyLogging {
       writeZoningBody(sg, condPartWorker, opt)
     else
       writeBodyInner(2, sg, opt)
-    if (containsAsserts) {
-      writeLines(2, "if (done_reset && update_registers && assert_triggered) exit(assert_exit_code);")
-      writeLines(2, "if (!done_reset || !update_registers) assert_triggered = false;")
-    }
+    // if (containsAsserts) {
+    //   writeLines(2, "if (done_reset && update_registers && assert_triggered) exit(assert_exit_code);")
+    //   writeLines(2, "if (!done_reset || !update_registers) assert_triggered = false;")
+    // }
 
     writeRegResetOverrides(sg)
 
@@ -1112,7 +1112,7 @@ class EssentEmitter(initialOpt: OptFlags, writer: Writer) extends LazyLogging {
     }
 //    writeLines(0, "uint64_t debug_cycle_count = 0;")
 
-    val containsAsserts = sg.containsStmtOfType[Stop]()
+    // val containsAsserts = sg.containsStmtOfType[Stop]()
     val extIOMap = findExternalPorts(circuit)
 
     rn.populateFromSG(sg, extIOMap, isParallel = true)
@@ -1137,11 +1137,11 @@ class EssentEmitter(initialOpt: OptFlags, writer: Writer) extends LazyLogging {
       writeLines(1, "}")
       writeLines(0, "")
     }
-    if (containsAsserts) {
-      writeLines(1, "bool assert_triggered = false;")
-      writeLines(1, "int assert_exit_code;")
-      writeLines(0, "")
-    }
+    // if (containsAsserts) {
+    //   writeLines(1, "bool assert_triggered = false;")
+    //   writeLines(1, "int assert_exit_code;")
+    //   writeLines(0, "")
+    // }
 
 
     val worker_thread_count = initialOpt.parallel - 1
@@ -1182,10 +1182,10 @@ class EssentEmitter(initialOpt: OptFlags, writer: Writer) extends LazyLogging {
         writeZoningBody_TP(sg, condPartWorker, opt, pid)
       else
         writeBodyInner_TP(2, sg, opt, pid)
-      if (containsAsserts) {
-        writeLines(2, s"if (done_reset && update_registers && assert_triggered) exit(assert_exit_code);")
-        writeLines(2, s"if (!done_reset || !update_registers) assert_triggered = false;")
-      }
+      // if (containsAsserts) {
+      //   writeLines(2, s"if (done_reset && update_registers && assert_triggered) exit(assert_exit_code);")
+      //   writeLines(2, s"if (!done_reset || !update_registers) assert_triggered = false;")
+      // }
 
       writeRegResetOverrides(sg)
       writeLines(1, "}")
