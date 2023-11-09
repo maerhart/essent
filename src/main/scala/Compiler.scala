@@ -138,7 +138,7 @@ class EssentEmitter(initialOpt: OptFlags, w: Writer, circuit: Circuit) extends L
       case cp: CondPart => {
         w.writeLines(1, s"void ${genEvalFuncName(cp.id)}() {")
         if (!cp.alwaysActive)
-          w.writeLines(2, s"$flagVarName[${cp.id}] = false;")
+          w.writeLines(2, s"$flagVarName[${cp.id}] = !update_registers;")
         if (opt.trackParts)
           w.writeLines(2, s"${actTrac.actVarName}[${cp.id}]++;")
 
@@ -283,7 +283,7 @@ class EssentEmitter(initialOpt: OptFlags, w: Writer, circuit: Circuit) extends L
     if(opt.withVCD) { vcd.get.compareOldValues(circuit) }
     if (containsAsserts) {
       w.writeLines(2, "if (done_reset && update_registers && assert_triggered) exit(assert_exit_code);")
-      w.writeLines(2, "if (!done_reset) assert_triggered = false;")
+      w.writeLines(2, "if (!done_reset || !update_registers) assert_triggered = false;")
     }
     w.writeLines(0, "")
     if(opt.withVCD) { vcd.get.assignOldValues(circuit) }
