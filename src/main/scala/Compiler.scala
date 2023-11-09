@@ -235,7 +235,7 @@ class EssentEmitter(initialOpt: OptFlags, w: Writer, circuit: Circuit) extends L
     }
     val sg = StatementGraph(circuit, opt.removeFlatConnects)
     logger.info(sg.makeStatsString)
-    val containsAsserts = sg.containsStmtOfType[Stop]()
+    // val containsAsserts = sg.containsStmtOfType[Stop]()
     val extIOMap = findExternalPorts(circuit)
     val condPartWorker = MakeCondPart(sg, rn, extIOMap)
     rn.populateFromSG(sg, extIOMap)
@@ -265,11 +265,11 @@ class EssentEmitter(initialOpt: OptFlags, w: Writer, circuit: Circuit) extends L
     }
     if (opt.withVCD)  { vcd.get.declareOldvaluesAll(circuit) }
     if(opt.withVCD) { vcd.get.genWaveHeader() }
-    if (containsAsserts) {
-      w.writeLines(1, "bool assert_triggered = false;")
-      w.writeLines(1, "int assert_exit_code;")
-      w.writeLines(0, "")
-    }
+    // if (containsAsserts) {
+    //   w.writeLines(1, "bool assert_triggered = false;")
+    //   w.writeLines(1, "int assert_exit_code;")
+    //   w.writeLines(0, "")
+    // }
     if (opt.useCondParts)
       writeZoningPredecs(sg, condPartWorker, circuit.main, extIOMap, opt)
     w.writeLines(1, s"void eval(bool update_registers, bool verbose, bool done_reset) {")
@@ -281,10 +281,10 @@ class EssentEmitter(initialOpt: OptFlags, w: Writer, circuit: Circuit) extends L
     else
       writeBodyInner(2, sg, opt)
     if(opt.withVCD) { vcd.get.compareOldValues(circuit) }
-    if (containsAsserts) {
-      w.writeLines(2, "if (done_reset && update_registers && assert_triggered) exit(assert_exit_code);")
-      w.writeLines(2, "if (!done_reset || !update_registers) assert_triggered = false;")
-    }
+    // if (containsAsserts) {
+    //   w.writeLines(2, "if (done_reset && update_registers && assert_triggered) exit(assert_exit_code);")
+    //   w.writeLines(2, "if (!done_reset || !update_registers) assert_triggered = false;")
+    // }
     w.writeLines(0, "")
     if(opt.withVCD) { vcd.get.assignOldValues(circuit) }
     w.writeLines(2, "")
